@@ -12,7 +12,7 @@ def main():
     # print("\n")
 
     print("\n\n\n-----TODAY RESULTS-----\n")
-    today_results = LivescoreDriver("2020-10-06")
+    today_results = LivescoreDriver("2020-10-08")
     today_results_get = today_results.get_results()
     print(today_results_get)
 

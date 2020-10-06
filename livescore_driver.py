@@ -89,15 +89,27 @@ class LivescoreDriver:
             }
         )
 
-######### START NEW #########
-
-    def __get_league_array_element(self, index_competition_place, index_name=None, index_date=None):
-        if index_competition_place != None and index_name != None and index_date != None:
+    def __get_league_array_element(self, index_competition_place, index_name=None, index_date=None, index_game=None):
+        if index_competition_place != None and index_name != None and index_date != None and index_game != None:
+            return self._leagues_array[index_competition_place]["competitions"][index_name]["games"][index_date]["listGames"][index_game]
+        elif index_competition_place != None and index_name != None and index_date != None and index_game == None:
             return self._leagues_array[index_competition_place]["competitions"][index_name]["games"][index_date]
-        elif index_competition_place != None and index_name != None and index_date == None:
+        elif index_competition_place != None and index_name != None and index_date == None and index_game == None:
             return self._leagues_array[index_competition_place]["competitions"][index_name]
-        elif index_competition_place != None and index_name == None and index_date == None:
+        elif index_competition_place != None and index_name == None and index_date == None and index_game == None:
             return self._leagues_array[index_competition_place]
+        else:
+            raise TypeError("Indices cannot be None if not allowed")
+
+    def __get_league_array_list(self, index_competition_place=None, index_name=None, index_date=None):
+        if index_competition_place != None and index_name != None and index_date != None:
+            return self._leagues_array[index_competition_place]["competitions"][index_name]["games"][index_date]["listGames"]
+        elif index_competition_place != None and index_name != None and index_date == None:
+            return self._leagues_array[index_competition_place]["competitions"][index_name]["games"]
+        elif index_competition_place != None and index_name == None and index_date == None:
+            return self._leagues_array[index_competition_place]["competitions"]
+        elif index_competition_place == None and index_name == None and index_date == None:
+            return self._leagues_array
         else:
             raise TypeError("Indices cannot be None if not allowed")
 
@@ -110,170 +122,149 @@ class LivescoreDriver:
     def __get_date_array_length(self, index_competition_place, index_competition):
         return len(self._leagues_array[index_competition_place]["competitions"][index_competition]["games"])
 
-    def __get_item_index(self, array_to_check, item_to_find):
+    def __get_games_array_length(self, index_competition_place, index_name, index_date):
+        return len(self._leagues_array[index_competition_place]["competitions"][index_name]["games"][index_date]["listGames"])
+
+    def __get_item_index(self, array_to_check, item_to_find, item_title):
+        """ Get index of the item (regardless it is a competition place, a name of the competition or a date)
+
+        Args:
+            array_to_check ([type]): [description]
+            item_to_find ([type]): [description]
+            item_title (string): It is a title of the record in JSON. For example for date it it "date"
+
+        Returns:
+            [type]: [description]
+        """
         index = None
 
         for item_index, item in enumerate(array_to_check):
-            if item["competitionPlace"] == item_to_find:
+            if item[item_title] == item_to_find:
                 index = item_index
 
         return index
 
-######### END NEW #########
+    def __get_item_indices(self, competition_place, name=None, date=None):
+        indices = {"indexCompetitionPlace": None,
+                   "indexName": None, "indexDate": None}
 
-    def __get_competition_place_index(self, competition_place, name, date):
-        index = None
-
-        for index_competition_place, place in enumerate(self._leagues_array):
-            if (place["competitionPlace"] == competition_place):
-                index = index_competition_place
-
-        return index
-
-    def __get_competition_index(self, competition_place, name, date):
-        index = None
-
-        index_competition_place = self.__get_competition_place_index(
-            competition_place, name, date)
-
-        if index_competition_place == None:
-            return None
-        else:
-            for index_competition, competition in enumerate(self._leagues_array[index_competition_place]["competitions"]):
-                if (competition["name"] == name):
-                    index = index_competition
-
-        return {"indexCompetitionPlace": index_competition_place, "indexCompetition": index}
-
-    def __get_date_index(self, competition_place, name, date):
-        index = None
-        index_competition_place = None
-        index_competition = None
-        indices_competition = self.__get_competition_index(
-            competition_place, name, date)
-        if indices_competition != None:
-            index_competition_place = indices_competition["indexCompetitionPlace"]
-            index_competition = indices_competition["indexCompetition"]
-
-        if indices_competition == None:
-            return None
-        elif index_competition_place != None and index_competition == None:
-            return {"indexCompetitionPlace": index_competition_place, "indexCompetition": None, "indexDate": None}
-        else:
-            for index_date, game in enumerate(self._leagues_array[index_competition_place]["competitions"][index_competition]["games"]):
-                if (game["date"] == date):
-                    index = index_date
-
-        return {"indexCompetitionPlace": index_competition_place, "indexCompetition": index_competition, "indexDate": index}
-
-    def __insert_data_title(self, competition_place, name, date):
-        index_competition_place = None
-        index_competition = None
+        index_competition_place = self.__get_item_index(
+            self.__get_league_array_list(), competition_place, "competitionPlace")
+        index_name = None
         index_date = None
-        indices = self.__get_date_index(competition_place, name, date)
-        if indices != None:
-            index_competition_place = indices["indexCompetitionPlace"]
-            index_competition = indices["indexCompetition"]
-            index_date = indices["indexDate"]
-
-        if indices == None:
-            self.__create_new_competition_place(competition_place, name, date)
-        elif index_competition_place != None and index_competition == None:
-            self.__create_new_competition(name, date, index_competition_place)
-        elif index_competition_place != None and index_competition != None and index_date == None:
-            self.__create_new_date(
-                date, index_competition_place, index_competition)
+        indices["indexCompetitionPlace"] = index_competition_place
+        if (indices["indexCompetitionPlace"] != None and competition_place != None and name != None):
+            index_name = self.__get_item_index(
+                self.__get_league_array_list(indices["indexCompetitionPlace"]), name, "name")
+            indices["indexName"] = index_name
+            if (indices["indexName"] != None and date != None):
+                index_date = self.__get_item_index(self.__get_league_array_list(
+                    indices["indexCompetitionPlace"], indices["indexName"]), date, "date")
+                indices["indexDate"] = index_date
 
         return indices
 
-    def __insert_data(self, results):
-        _competition_place = None
-        _competition = None
-        _date = None
-        _indices = None
+    def __get_game_index(self, home_team, away_team, index_competition_place, index_name, index_date):
+        index = None
+
+        if (self.__get_games_array_length(index_competition_place, index_name, index_date) != 0):
+            games_array = self.__get_league_array_list(
+                index_competition_place, index_name, index_date)
+            for item_index, item in enumerate(games_array):
+                if (item["homeTeam"] == home_team and item["awayTeam"] == away_team):
+                    index = item_index
+
+        return index
+
+    def __check_game_state(self, current_state, result, index_competition_place, index_name, index_date, index_game):
+        game_to_check = self.__get_league_array_element(
+            index_competition_place, index_name, index_date, index_game)
+
+        if (game_to_check["currentState"] != current_state or game_to_check["result"] != result):
+            return False
+        else:
+            return True
+
+    def __change_game_state(self, current_state, home_team, away_team, result, index_competition_place, index_name, index_date, index_game):
+
+        if (self._leagues_array[index_competition_place]["competitions"][index_name][
+                "games"][index_date]["listGames"][index_game]["homeTeam"] == home_team and self._leagues_array[index_competition_place]["competitions"][index_name][
+                "games"][index_date]["listGames"][index_game]["awayTeam"] == away_team):
+            self._leagues_array[index_competition_place]["competitions"][index_name][
+                "games"][index_date]["listGames"][index_game]["currentState"] = current_state
+            self._leagues_array[index_competition_place]["competitions"][index_name][
+                "games"][index_date]["listGames"][index_game]["result"] = result
+
+    def __add_title(self, competition_place, name, date):
+
+        indices = self.__get_item_indices(competition_place, name, date)
+
+        if (indices["indexCompetitionPlace"] != None and indices["indexName"] != None and indices["indexDate"] == None):
+            self.__create_new_date(
+                date, indices["indexCompetitionPlace"], indices["indexName"])
+            index_date = self.__get_date_array_length(
+                indices["indexCompetitionPlace"], indices["indexName"]) - 1
+            indices["indexDate"] = index_date
+        elif (indices["indexCompetitionPlace"] != None and indices["indexName"] == None and indices["indexDate"] == None):
+            self.__create_new_competition(
+                name, date, indices["indexCompetitionPlace"])
+            index_name = self.__get_competition_array_length(
+                indices["indexCompetitionPlace"]) - 1
+            indices["indexName"] = index_name
+            indices["indexDate"] = 0
+        elif (indices["indexCompetitionPlace"] == None and indices["indexName"] == None and indices["indexDate"] == None):
+            self.__create_new_competition_place(competition_place, name, date)
+            index_competition_place = self.__get_competition_place_array_length() - 1
+            indices["indexCompetitionPlace"] = index_competition_place
+            indices["indexName"] = 0
+            indices["indexDate"] = 0
+
+        return indices
+
+    def __add_game(self, current_state, home_team, away_team, result, indices):
+        index_competition_place = indices["indexCompetitionPlace"]
+        index_name = indices["indexName"]
+        index_date = indices["indexDate"]
+        index_game = self.__get_game_index(
+            home_team, away_team, index_competition_place, index_name, index_date)
+
+        if (index_game == None):
+            self.__create_new_game(current_state, home_team, away_team,
+                                   result, index_competition_place, index_name, index_date)
+        else:
+            if (self.__check_game_state(current_state, result, index_competition_place, index_name, index_date, index_game) == False):
+                self.__change_game_state(current_state, home_team, away_team, result,
+                                         index_competition_place, index_name, index_date, index_game)
+
+    def __insert(self, results):
+        competition_place = None
+        name = None
+        date = None
+        indices = None
         for item in results:
             # Assigning a title
             if item.get_attribute(self._title_attribute_name) == self._title_attribute_value:
                 item_text = item.text.split(" - ")
-                _competition_place = item_text[0].title()
-                _competition = item_text[1].split("\n")[0].title()
-                _date = item_text[1].split("\n")[1].title()
-                _indices = self.__insert_data_title(
-                    _competition_place, _competition, _date)
+                competition_place = item_text[0].title()
+                name = item_text[1].split("\n")[0].title()
+                date = item_text[1].split("\n")[1].title()
+                indices = self.__add_title(
+                    competition_place, name, date)
             # Assigning a game
             if item.get_attribute(self._game_attribute_name) == self._game_attribute_value:
                 item_text = item.text.split("\n")
-                _current_state = item_text[0]
-                _home_team = item_text[1]
-                _away_team = item_text[3]
-                _result = item_text[2]
-                _index_competition_place = len(
-                    self._leagues_array) - 1 if _indices == None else _indices["indexCompetitionPlace"]
-                _index_competition = len(
-                    self._leagues_array[_index_competition_place]["competitions"]) - 1 if _indices == None or _indices["indexCompetition"] == None else _indices["indexCompetition"]
-                # if _indices == None:
-                #     _max_index_competition_place = len(self._leagues_array) - 1
-                #     _max_index_competition = len(
-                #         self._leagues_array[_max_index_competition_place]["competitions"])
-                #     _max_index_date = len(
-                #         self._leagues_array[_max_index_competition_place]["competitions"][_max_index_competition]["games"])
-                #     self.__create_new_game(
-                #         _current_state, _home_team, _away_team, _result, _max_index_competition_place, _max_index_competition, _max_index_date)
-                # elif _indices != None:
-                #     _max_index_competition_place = _indices["indexCompetitionPlace"]
-                #     if _indices["indexCompetition"] == None:
-                #         _max_index_competition = len(
-                #             self._leagues_array[_max_index_competition_place]["competitions"])
-                #         _max_index_date = len(
-                #             self._leagues_array[_max_index_competition_place]["competitions"][_max_index_competition]["games"])
-
-    def __data_conversion(self, results):
-        # Predeclaring variables because of necessary access in various scopes
-        _location = None
-        _name = None
-        _date = None
-        for item in results:
-            if item.get_attribute(self._title_attribute_name) == self._title_attribute_value:
-                item_text = item.text.split(" - ")
-                _location = item_text[0].title()
-                _name = item_text[1].split("\n")[0].title()
-                _date = item_text[1].split("\n")[1].title()
-                self._leagues_array.append({
-                    "competitionPlace": _location,
-                    "name": _name,
-                    "games": {
-                        "date": _date,
-                        "list": []
-                    }
-                })
-            if item.get_attribute(self._game_attribute_name) == self._game_attribute_value:
-                item_text = item.text.split("\n")
-                self._leagues_array[len(self._leagues_array) - 1]["games"]["list"].append({
-                    "currentState": item_text[0],
-                    "homeTeam": item_text[1],
-                    "awayTeam": item_text[3],
-                    "result": item_text[2]
-                })
-
-    def __data_insert(self, results):
-        _competition_place = None
-        _name = None
-        _date = None
-
-        for item in results:
-            if item.get_attribute(self._title_attribute_name) == self._title_attribute_value:
-                item_text = item.text.split(" - ")
-                _competition_place = item_text[0].title()
-                _name = item_text[1].split("\n")[0].title()
-                _date = item_text[1].split("\n")[1].title()
-                self._leagues_array
+                current_state = item_text[0]
+                home_team = item_text[1]
+                away_team = item_text[3]
+                result = item_text[2]
+                self.__add_game(current_state, home_team,
+                                away_team, result, indices)
 
     def __run_data(self):
         self.__run_driver()
         try:
             result = self.__page_reader()
-            # self.__data_conversion(result)
-            self.__insert_data(result)
+            self.__insert(result)
         finally:
             self._driver.quit()
 
