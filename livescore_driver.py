@@ -6,10 +6,18 @@ import json
 
 
 class LivescoreDriver:
-    def __init__(self, games_date=""):
+    def __init__(self, games_date="", base_array=[]):
+        """Class which scraps and order the data collected from Livescore
+
+        Args:
+            games_date (string, optional): The date of the competitions in the format YYYY-MM-DD. If default then it collects data about today. Defaults to "".
+            base_array (list, optional): The array of the games to which we want to add games. If default then we start with an empty array. Defaults to [].
+        """
         self._PATH = "./chromedriver"
         self._LIVESCORE_ADDRESS = "https://www.livescore.com/" + \
             (games_date if games_date == "" else "soccer/" + games_date + "/")
+        # Attributes in the source code responsible for collection of the right data. Div with data-type container chooses
+        # the container of games. Div with data-type stg is the title of the competition and data-type evt of event (game)
         self._container_attribute_name = "data-type"
         self._container_attribute_value = "container"
         self._container_attribute = "[" + self._container_attribute_name + \
@@ -25,15 +33,22 @@ class LivescoreDriver:
         self._full_games_attributes = self._title_attribute + ", " + self._game_attribute
 
         # Member variables used later
-        self._leagues_array = []
+        self._leagues_array = base_array
         self._driver = None
 
     def __run_driver(self):
+        """ Start selenium webdriver
+        """
         self._driver = webdriver.Chrome(self._PATH)
         self._driver.get(self._LIVESCORE_ADDRESS)
         self._driver.implicitly_wait(5)
 
     def __page_reader(self):
+        """ Get data from the website
+
+        Returns:
+            list of selenium webelements: The list of selenium elements chosen by data-types stg and evt
+        """
         driver_livescore_read = WebDriverWait(self._driver, 5).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, self._container_attribute)))
         results = driver_livescore_read.find_elements_by_css_selector(
@@ -244,10 +259,10 @@ class LivescoreDriver:
         for item in results:
             # Assigning a title
             if item.get_attribute(self._title_attribute_name) == self._title_attribute_value:
-                item_text = item.text.split(" - ")
+                item_text = item.text.replace("\n", " - ").split(" - ")
                 competition_place = item_text[0].title()
-                name = item_text[1].split("\n")[0].title()
-                date = item_text[1].split("\n")[1].title()
+                name = item_text[1].title()
+                date = item_text[2].title()
                 indices = self.__add_title(
                     competition_place, name, date)
             # Assigning a game

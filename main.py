@@ -12,9 +12,11 @@ def main():
     # print("\n")
 
     print("\n\n\n-----TODAY RESULTS-----\n")
-    today_results = LivescoreDriver("2020-10-08")
-    today_results_get = today_results.get_results()
-    print(today_results_get)
+    driver20201007 = LivescoreDriver("2020-10-07")
+    results2020107 = driver20201007.get_results()
+    driver20201008 = LivescoreDriver("2020-10-08", results2020107)
+    results2020100708 = driver20201008.get_results()
+    print(results2020100708)
 
     # with open("livescore", "wb") as f:
     #     pickle.dump(today_results_get, f)
