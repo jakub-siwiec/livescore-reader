@@ -387,12 +387,19 @@ class LivescoreDriver:
         finally:
             self._driver.quit()
 
-    def get_results(self):
+    def populate_results(self):
         """Populate self._leagues_array and return it
 
         Returns:
             list: List of dictionaries of self._leagues_array
         """
         self.__run_data()
-        # return json.dumps(self._leagues_array)
         return self._leagues_array
+
+    def get_json_results(self):
+        """Return previously populated results in json format
+
+        Returns:
+            string: JSON string
+        """
+        return json.dumps(self._leagues_array)
