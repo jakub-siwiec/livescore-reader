@@ -28,6 +28,10 @@ Package manager:
 
 * Anaconda
 
+### Setup
+
+You need to install [chromedriver](https://chromedriver.chromium.org/) and place it inside an app location folder. Of course with an additional setup another driver can be used.
+
 ### What it can do
 
 The app reads all the results for a day specified with a parameter. Several days can be combined together into one result. The result is the list of dictionaries at the beginning but later can be converted into JSON string format. The beginning result can be saved as a pickle file and results in strings can be saved in file as a pickle, text (.txt file) or json (.json file).
