@@ -145,5 +145,5 @@ cython_debug/
 chromedriver
 
 # data
-
+*.txt
 livescore
